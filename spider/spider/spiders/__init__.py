@@ -6,15 +6,24 @@
 import scrapy
 
 class URLSpider(scrapy.Spider):
-    name = "URL"
+    name = "Douban"
     start_urls = [
-        'https://ourcloudnetwork.com/ms-220-study-guide-troubleshooting-microsoft-exchange-online/'
+        'https://movie.douban.com/top250?start=0&filter='
     ]
 
     def parse(self, response):
-        for quote in response.css('div.elementor-element-52ef7ed'):
+        self.logger.info('item page %s', response.url)
+        for movie in response.css('div.item'):
             yield {
-                'text': quote.css('li::text').getall(),
-                'url': quote.css('a::attr(href)').getall()
-                # 'tags': quote.css('div.tags a.tag::text').getall(),
+                'Movie link': movie.css('div.pic a::attr(href)').get(),
+                'Movie Picture': movie.css('::attr(src)').get(),
+                'Movie Name': movie.css('span.title::text').get(),
+                'Rate': movie.css('span.rating_num::text').get(),
+                'Quote': movie.css('span.inq::text').get(),
             }
+
+        next_page = response.css('span.next a::attr(href)').get()
+        if next_page is not None:
+            next_page = response.urljoin(next_page)
+            yield scrapy.Request(next_page, callback=self.parse)
+
